@@ -21,6 +21,26 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .video-container, .next-button, .back-button { text-align: center; }
+    .student-fields {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        max-width: 620px;
+        margin: 20px auto 0;
+        text-align: left;
+    }
+    .student-fields label { display: grid; gap: 6px; }
+    .student-fields input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 9px 10px;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        font: inherit;
+    }
+    @media (max-width: 560px) {
+        .student-fields { grid-template-columns: 1fr; }
+    }
     .next-button, .back-button, #start-button, #discuss-results, #retry-button, #export-results, #export-pdf {
         margin-top: 15px;
         padding: 10px 20px;
@@ -214,7 +234,20 @@
         <h2>階段 1：認識螺旋抽水器</h2>
         <iframe width="560" height="315" src="https://www.youtube.com/embed/dX9GvCF6620" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         <br>
-        <button class="next-button" id="enter-lab">進入實驗室</button>
+        <form id="student-info-form">
+            <div class="student-fields">
+                <label for="student-class">班級
+                    <input id="student-class" name="student-class" type="text" autocomplete="organization-title" required>
+                </label>
+                <label for="student-seat">座號
+                    <input id="student-seat" name="student-seat" type="number" min="1" step="1" inputmode="numeric" required>
+                </label>
+                <label for="student-name">姓名
+                    <input id="student-name" name="student-name" type="text" autocomplete="name" required>
+                </label>
+            </div>
+            <button class="next-button" id="enter-lab" type="submit">進入實驗室</button>
+        </form>
     </div>
 
     <!-- 階段2：操作模擬 -->
@@ -311,6 +344,7 @@ let experiments = [];
 let failedAttempts = 0;
 let returnCount = 0;
 let activityLog = [];
+let studentInfo = { className: '', seatNumber: '', name: '' };
 let lastParams = null;
 let chartInstances = []; // 用於重繪時銷毀舊圖表
 
@@ -343,7 +377,17 @@ document.getElementById('angle').addEventListener('change', updatePumpVisual);
 document.getElementById('diameter').addEventListener('change', updatePumpVisual);
 window.addEventListener('DOMContentLoaded', updatePumpVisual);
 
-document.getElementById('enter-lab').onclick = function() {
+document.getElementById('student-info-form').onsubmit = function(event) {
+    event.preventDefault();
+    studentInfo = {
+        className: document.getElementById('student-class').value.trim(),
+        seatNumber: document.getElementById('student-seat').value.trim(),
+        name: document.getElementById('student-name').value.trim()
+    };
+    if (!studentInfo.className || !studentInfo.seatNumber || !studentInfo.name) {
+        alert('請完整填寫班級、座號與姓名後再進入實驗室。');
+        return;
+    }
     document.getElementById('intro').style.display = 'none';
     document.getElementById('experiment').style.display = 'block';
     updatePumpVisual();
@@ -447,11 +491,20 @@ async function exportExperimentPdf() {
     }
 
     const speedNames = { low: '低速', medium: '中速', high: '高速' };
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
     const report = document.createElement('div');
     report.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;padding:36px;background:#fff;color:#222;font-family:"Microsoft JhengHei","微軟正黑體",sans-serif;box-sizing:border-box;';
     report.innerHTML = `
         <h1 style="font-size:28px;margin:0 0 8px;">阿基米德螺旋抽水器實驗紀錄</h1>
         <p style="font-size:14px;margin:0 0 20px;">匯出時間：${new Date().toLocaleString('zh-TW')}</p>
+        <h2 style="font-size:20px;margin:20px 0 8px;">學生資料</h2>
+        <p style="font-size:16px;line-height:1.8;margin:0;">班級：${escapeHtml(studentInfo.className)}<br>座號：${escapeHtml(studentInfo.seatNumber)}<br>姓名：${escapeHtml(studentInfo.name)}</p>
         <h2 style="font-size:20px;margin:20px 0 8px;">紀錄摘要</h2>
         <p style="font-size:16px;line-height:1.8;margin:0;">完成實驗：${experiments.length} 次<br>失敗：${failedAttempts} 次<br>退回：${returnCount} 次</p>
         <p style="font-size:13px;color:#555;line-height:1.7;">失敗定義：同時更改至少兩個變因，導致實驗未啟動。退回次數依使用者按下「返回實驗室」計算。</p>
