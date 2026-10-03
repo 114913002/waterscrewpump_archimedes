@@ -21,7 +21,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .video-container, .next-button, .back-button { text-align: center; }
-    .next-button, .back-button, #start-button, #discuss-results, #retry-button {
+    .next-button, .back-button, #start-button, #discuss-results, #retry-button, #export-results, #export-pdf {
         margin-top: 15px;
         padding: 10px 20px;
         font-size: 16px;
@@ -31,6 +31,7 @@
         background: #4a90e2;
         color: white;
     }
+    #export-results, #export-pdf { background: #34495e; }
     #retry-button { background: #27ae60; }
     #discuss-results:disabled { background: #aaa; cursor: not-allowed; }
 
@@ -273,6 +274,7 @@
             </table>
             <p id="hint" style="color:#888;">完成至少 3 次實驗才能進入結果討論區</p>
             <button id="discuss-results" disabled>進入結果討論區</button>
+            <button id="export-results" type="button">下載實驗紀錄 PDF</button>
         </div>
     </div>
 
@@ -285,6 +287,7 @@
             <div><h3>半徑 vs 輸水效率</h3><canvas id="chart-radius"></canvas></div>
         </div>
         <div style="text-align:center;">
+            <button id="export-pdf" type="button">下載實驗紀錄 PDF</button>
             <button id="retry-button">🔁 再試一次</button>
         </div>
     </div>
@@ -300,9 +303,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 let experimentCount = 0;
 let experiments = [];
+let failedAttempts = 0;
+let returnCount = 0;
+let activityLog = [];
 let lastParams = null;
 let chartInstances = []; // 用於重繪時銷毀舊圖表
 
@@ -343,6 +351,18 @@ document.getElementById('enter-lab').onclick = function() {
 
 document.getElementById('continue-button').onclick = function() {
     document.getElementById('warning-overlay').style.display = 'none';
+    returnCount++;
+    activityLog.push({
+        type: '退回',
+        time: new Date().toLocaleString('zh-TW'),
+        experiment: experimentCount + 1,
+        params: {
+            angle: document.getElementById('angle').value,
+            speed: document.getElementById('speed').value,
+            diameter: document.getElementById('diameter').value
+        },
+        detail: '使用者按下「返回實驗室」'
+    });
 };
 
 document.getElementById('start-button').onclick = function() {
@@ -357,6 +377,14 @@ document.getElementById('start-button').onclick = function() {
         if (currentParams.speed !== lastParams.speed) changedCount++;
         if (currentParams.diameter !== lastParams.diameter) changedCount++;
         if (changedCount >= 2) {
+            failedAttempts++;
+            activityLog.push({
+                type: '失敗',
+                time: new Date().toLocaleString('zh-TW'),
+                experiment: experimentCount + 1,
+                params: currentParams,
+                detail: '同時更改至少兩個變因，實驗未啟動'
+            });
             document.getElementById('warning-overlay').style.display = 'flex';
             return;
         }
@@ -383,6 +411,7 @@ document.getElementById('start-button').onclick = function() {
         newRow.insertCell(4).innerText = efficiency;
 
         experiments.push({ angle, speed, diameter, efficiency });
+        experiments[experiments.length - 1].time = new Date().toLocaleString('zh-TW');
         lastParams = currentParams;
         experimentCount++;
 
@@ -407,6 +436,66 @@ document.getElementById('retry-button').onclick = function() {
     document.getElementById('experiment').style.display = 'block';
     updatePumpVisual();
 };
+
+document.getElementById('export-results').onclick = exportExperimentPdf;
+document.getElementById('export-pdf').onclick = exportExperimentPdf;
+
+async function exportExperimentPdf() {
+    if (!window.html2canvas || !window.jspdf) {
+        alert('PDF 匯出元件載入失敗，請確認網路連線後重試。');
+        return;
+    }
+
+    const speedNames = { low: '低速', medium: '中速', high: '高速' };
+    const report = document.createElement('div');
+    report.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;padding:36px;background:#fff;color:#222;font-family:"Microsoft JhengHei","微軟正黑體",sans-serif;box-sizing:border-box;';
+    report.innerHTML = `
+        <h1 style="font-size:28px;margin:0 0 8px;">阿基米德螺旋抽水器實驗紀錄</h1>
+        <p style="font-size:14px;margin:0 0 20px;">匯出時間：${new Date().toLocaleString('zh-TW')}</p>
+        <h2 style="font-size:20px;margin:20px 0 8px;">紀錄摘要</h2>
+        <p style="font-size:16px;line-height:1.8;margin:0;">完成實驗：${experiments.length} 次<br>失敗：${failedAttempts} 次<br>退回：${returnCount} 次</p>
+        <p style="font-size:13px;color:#555;line-height:1.7;">失敗定義：同時更改至少兩個變因，導致實驗未啟動。退回次數依使用者按下「返回實驗室」計算。</p>
+        <h2 style="font-size:20px;margin:20px 0 8px;">完成的實驗</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr><th>編號</th><th>時間</th><th>夾角</th><th>轉速</th><th>半徑</th><th>輸水效率</th></tr></thead>
+            <tbody>${experiments.map((item, index) => `<tr><td>${index + 1}</td><td>${item.time || '-'}</td><td>${item.angle} 度</td><td>${speedNames[item.speed]}</td><td>${item.diameter} 公尺</td><td>${item.efficiency}%</td></tr>`).join('')}</tbody>
+        </table>
+        <h2 style="font-size:20px;margin:20px 0 8px;">失敗與退回明細</h2>
+        ${activityLog.length ? `<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th>類型</th><th>時間</th><th>實驗編號</th><th>當時設定</th><th>說明</th></tr></thead><tbody>${activityLog.map(item => `<tr><td>${item.type}</td><td>${item.time}</td><td>${item.experiment}</td><td>${item.params.angle} 度 / ${speedNames[item.params.speed]} / ${item.params.diameter} 公尺</td><td>${item.detail}</td></tr>`).join('')}</tbody></table>` : '<p style="font-size:14px;">目前沒有失敗或退回紀錄。</p>'}
+        <style>
+            th,td { border:1px solid #bbb; padding:7px; text-align:left; vertical-align:top; }
+            th { background:#edf2f5; }
+            tr { break-inside:avoid; }
+        </style>`;
+    document.body.appendChild(report);
+
+    try {
+        const canvas = await html2canvas(report, { scale: 2, backgroundColor: '#ffffff' });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const margin = 10;
+        const pageWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+        const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
+        const sliceHeight = Math.floor(canvas.width * pageHeight / pageWidth);
+
+        for (let offset = 0, page = 0; offset < canvas.height; offset += sliceHeight, page++) {
+            if (page > 0) pdf.addPage();
+            const currentHeight = Math.min(sliceHeight, canvas.height - offset);
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = currentHeight;
+            pageCanvas.getContext('2d').drawImage(canvas, 0, offset, canvas.width, currentHeight, 0, 0, canvas.width, currentHeight);
+            pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', margin, margin, pageWidth, currentHeight * pageWidth / canvas.width);
+        }
+
+        pdf.save('阿基米德螺旋抽水器實驗紀錄.pdf');
+    } catch (error) {
+        console.error('PDF 匯出失敗：', error);
+        alert('PDF 產生失敗，請稍後再試。');
+    } finally {
+        report.remove();
+    }
+}
 
 function drawCharts() {
     // 若之前已畫過圖，先銷毀避免重疊
