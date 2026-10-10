@@ -7,15 +7,28 @@
 <style>
     body {
         font-family: "微軟正黑體", Arial, sans-serif;
-        background-color: #f4f4f4;
+        background: #d9c49f;
         margin: 0;
         padding: 20px;
+        min-height: 100vh;
+        box-sizing: border-box;
+    }
+    .polis-backdrop {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        opacity: .8;
+        pointer-events: none;
     }
     h1 { text-align: center; }
     .container {
+        position: relative;
+        z-index: 1;
         margin: 0 auto;
         max-width: 900px;
-        background: white;
+        background: rgba(255, 252, 244, .95);
         padding: 20px;
         border-radius: 8px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -55,42 +68,105 @@
     #retry-button { background: #27ae60; }
     #discuss-results:disabled { background: #aaa; cursor: not-allowed; }
 
-    /* ================= 手繪螺旋泵浦場景 ================= */
+    /* ================= 阿基米德螺旋泵浦場景 ================= */
     .pump-scene {
         position: relative;
-        width: 360px;
-        height: 280px;
+        width: min(100%, 520px);
+        aspect-ratio: 520 / 330;
+        box-sizing: border-box;
         margin: 20px auto;
-        background: linear-gradient(to bottom, #eef8ff 0%, #eef8ff 62%, #d8c39c 62%, #d8c39c 100%);
-        border: 2px solid #333;
+        background: linear-gradient(to bottom, #c8e8f4 0%, #e9f5f4 67%, #b99a6a 67%, #b99a6a 100%);
+        border: 2px solid #70553b;
         border-radius: 10px;
         overflow: hidden;
     }
-    /* 取水槽 */
+    .scene-sun {
+        position: absolute;
+        top: 25px;
+        left: 35px;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #f6ce75;
+        box-shadow: 0 0 0 10px rgba(246, 206, 117, .18);
+    }
+    /* 底部蓄水船 */
     .water-basin {
         position: absolute;
-        left: 14px;
-        bottom: 14px;
-        width: 92px;
-        height: 56px;
-        background: #3399ff;
-        border: 4px solid #2c3e50;
-        border-radius: 10px 10px 4px 4px;
+        z-index: 2;
+        left: 2.3%;
+        bottom: 4.5%;
+        width: 24%;
+        height: 17.6%;
+        background: linear-gradient(to bottom, #65bee7 0 43%, #865635 44% 100%);
+        border: 3px solid #553b28;
+        border-radius: 12px 12px 42px 42px;
+        clip-path: polygon(0 0, 100% 0, 88% 75%, 72% 100%, 22% 100%, 8% 75%);
+        box-shadow: inset 0 -9px 0 rgba(53, 34, 19, .2);
     }
     .water-basin::before {
         content: "";
         position: absolute;
-        top: 6px; left: 8px;
-        width: 76px; height: 10px;
-        background: rgba(255,255,255,0.5);
+        top: 8px;
+        left: 12px;
+        width: 95px;
+        height: 5px;
+        background: rgba(255,255,255,.7);
         border-radius: 50%;
+        box-shadow: 32px 9px 0 -1px rgba(255,255,255,.4), 4px 18px 0 -1px rgba(255,255,255,.32);
+    }
+    .boat-label {
+        position: absolute;
+        left: 5%;
+        bottom: 5.1%;
+        z-index: 3;
+        color: #fff8df;
+        font-size: 11px;
+        font-weight: bold;
+        text-shadow: 0 1px 2px #342516;
+    }
+    /* 上方蓄水庫 */
+    .reservoir {
+        position: absolute;
+        z-index: 1;
+        right: 11.5%;
+        top: 5.5%;
+        width: 23.8%;
+        height: 22.4%;
+        box-sizing: border-box;
+        border: 4px solid #67503b;
+        border-top-width: 7px;
+        border-radius: 5px 5px 15px 15px;
+        background: linear-gradient(to bottom, #e9dcc0 0 35%, #54aed3 36% 100%);
+        box-shadow: inset 0 0 0 4px rgba(255,255,255,.22), 4px 5px 0 rgba(78,57,37,.18);
+    }
+    .reservoir::before {
+        content: "";
+        position: absolute;
+        left: -8px;
+        right: -8px;
+        top: 20px;
+        height: 5px;
+        background: rgba(255,255,255,.7);
+        border-radius: 50%;
+        box-shadow: 30px 16px 0 -1px rgba(255,255,255,.4), 67px 5px 0 -1px rgba(255,255,255,.35);
+    }
+    .reservoir-label {
+        position: absolute;
+        z-index: 2;
+        right: 14%;
+        top: 7.6%;
+        color: #493b2c;
+        font-size: 12px;
+        font-weight: bold;
     }
     /* 傾斜外管的旋轉容器：pivot 在取水槽右上角 */
     .pump-tube-wrapper {
         position: absolute;
-        left: 70px;
-        top: 235px;
-        width: 250px;
+        z-index: 3;
+        left: 17.7%;
+        top: 83.6%;
+        width: 65.4%;
         height: 0;
         transform-origin: 0% 50%;
         transform: rotate(-45deg); /* 由 JS 依角度即時更新 */
@@ -99,7 +175,7 @@
         position: absolute;
         left: 0;
         top: -22px;
-        width: 250px;
+        width: 100%;
         height: 44px;
         border: 4px solid #3e2a17;
         background: #b3835a;
@@ -110,8 +186,20 @@
     .screw-thread {
         position: absolute;
         inset: 0;
-        background: repeating-linear-gradient(120deg, #e2c193 0 12px, #8a5b34 12px 24px);
+        background: repeating-linear-gradient(120deg, #d8b785 0 5px, #81532f 5px 10px, #d8b785 10px 14px, #a16f43 14px 22px);
         background-size: 34px 100%;
+    }
+    .screw-thread::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 2px;
+        right: 2px;
+        height: 7px;
+        transform: translateY(-50%);
+        border-radius: 4px;
+        background: linear-gradient(to bottom, #ead2a4, #634226 48%, #b98a58);
+        box-shadow: 0 1px 2px rgba(37, 24, 12, .7);
     }
     .running .screw-thread {
         animation: threadMove linear infinite;
@@ -124,7 +212,7 @@
     /* 出水口（隨管子一起旋轉，永遠在管子末端） */
     .outlet-cup {
         position: absolute;
-        left: 228px;
+        left: 93.5%;
         top: -34px;
         width: 34px;
         height: 26px;
@@ -154,17 +242,19 @@
         0%   { left: 14px;  opacity: 0; }
         8%   { opacity: 1; }
         90%  { opacity: 1; }
-        100% { left: 224px; opacity: 0; }
+        100% { left: 92.4%; opacity: 0; }
     }
     /* 底部手搖馬達 */
     .crank-motor {
         position: absolute;
-        left: 70px;
-        top: 235px;
-        width: 30px;
-        height: 30px;
-        margin-left: -15px;
-        margin-top: -15px;
+        z-index: 4;
+        left: 17.7%;
+        top: 83.6%;
+        width: 6%;
+        height: auto;
+        aspect-ratio: 1;
+        margin-left: -3%;
+        margin-top: -3%;
         border-radius: 50%;
         background: #c0392b;
         border: 3px solid #7b1f1f;
@@ -217,6 +307,95 @@
     }
     .warning-box h2 { color: #e74c3c; }
 
+    .archimedes-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(32, 43, 49, .72);
+    }
+    .archimedes-card {
+        width: min(560px, 100%);
+        padding: 28px 30px 30px;
+        border: 2px solid #e5c68e;
+        border-radius: 26px;
+        background:
+            radial-gradient(circle at 12% 12%, rgba(250, 222, 154, .32) 0 3px, transparent 4px),
+            #fffaf0;
+        box-shadow: 0 18px 50px rgba(25, 34, 40, .32), inset 0 0 0 7px rgba(255, 255, 255, .75);
+        text-align: center;
+    }
+    .archimedes-card h2 {
+        margin: 0 0 14px;
+        color: #65492f;
+        font-size: 25px;
+        letter-spacing: .04em;
+    }
+    .archimedes-sketch {
+        display: block;
+        width: 190px;
+        height: 190px;
+        margin: 0 auto 10px;
+        filter: drop-shadow(0 7px 5px rgba(93, 66, 42, .12));
+    }
+    .archimedes-speech {
+        display: inline-block;
+        position: relative;
+        max-width: 420px;
+        margin: 4px auto 18px;
+        padding: 15px 22px;
+        border: 2px solid #e7c57f;
+        border-radius: 20px;
+        background: #fff;
+        color: #382b20;
+        font-size: 19px;
+        font-weight: bold;
+        line-height: 1.5;
+        box-shadow: 0 4px 0 rgba(190, 146, 72, .12);
+    }
+    .archimedes-speech::before {
+        content: "";
+        position: absolute;
+        top: -9px;
+        left: calc(50% - 8px);
+        width: 14px;
+        height: 14px;
+        transform: rotate(45deg);
+        border-top: 2px solid #e7c57f;
+        border-left: 2px solid #e7c57f;
+        background: white;
+    }
+    .archimedes-card button {
+        padding: 11px 24px;
+        border: 0;
+        border-radius: 999px;
+        background: #4a8068;
+        color: white;
+        font: inherit;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #32604d;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .archimedes-card button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 0 #32604d;
+    }
+    .archimedes-card button:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #32604d;
+    }
+    @media (max-width: 520px) {
+        .archimedes-card { padding: 22px 18px 24px; }
+        .archimedes-sketch { width: 168px; height: 168px; }
+        .archimedes-speech { font-size: 17px; }
+    }
+    @media (max-width: 520px) {
+    .pump-scene { min-height: 190px; }
+    }
     .charts-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -226,13 +405,43 @@
 </style>
 </head>
 <body>
+<svg class="polis-backdrop" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+        <linearGradient id="polis-sky" x2="0" y2="1"><stop stop-color="#9dc8d0"/><stop offset="1" stop-color="#f3dfb5"/></linearGradient>
+        <linearGradient id="polis-road" x2="0" y2="1"><stop stop-color="#c8a878"/><stop offset="1" stop-color="#8b6848"/></linearGradient>
+    </defs>
+    <rect width="1440" height="900" fill="url(#polis-sky)"/>
+    <path d="M0 430 170 270 310 400 490 235 690 430 900 250 1120 430 1280 285 1440 410V600H0Z" fill="#8ba19a" opacity=".55"/>
+    <path d="M0 460 230 350 390 450 620 320 820 460 1030 340 1250 450 1440 330V620H0Z" fill="#b5ad8e" opacity=".65"/>
+    <rect y="465" width="1440" height="435" fill="url(#polis-road)"/>
+    <g fill="#e8d5b0" stroke="#80684c" stroke-width="8">
+        <path d="M0 300h270v300H0z"/><path d="M1170 270h270v330h-270z"/>
+        <path d="M30 220h210v45H30zM1160 195h250v50h-250z"/>
+    </g>
+    <g fill="#927957" stroke="#66543f" stroke-width="5">
+        <path d="M35 306h225v22H35zM1165 278h245v22h-245z"/>
+        <path d="M55 328h34v205H55zM112 328h34v205h-34zM169 328h34v205h-34zM226 328h25v205h-25z"/>
+        <path d="M1182 300h30v230h-30zM1240 300h30v230h-30zM1298 300h30v230h-30zM1356 300h48v230h-48z"/>
+    </g>
+    <g fill="#d9c59f" stroke="#80684c" stroke-width="5">
+        <path d="M40 307q30-60 60 0zM97 307q30-60 60 0zM154 307q30-60 60 0zM211 307q25-55 50 0z"/>
+        <path d="M1170 279q28-56 56 0zM1228 279q28-56 56 0zM1286 279q28-56 56 0zM1344 279q35-62 70 0z"/>
+    </g>
+    <g fill="#c9b18a" stroke="#80684c" stroke-width="5">
+        <path d="M330 380h190v220H330zM935 365h190v235H935z"/>
+        <path d="M355 332h140v36H355zM960 317h140v36H960z"/>
+        <path d="M370 445h38v95h-38zM435 445h38v95h-38zM975 430h38v100h-38zM1040 430h38v100h-38z"/>
+    </g>
+    <path d="M520 600 920 600 1260 900 180 900Z" fill="#d4b886" opacity=".88"/>
+    <path d="M710 610 730 610 700 900 650 900ZM790 610 810 610 880 900 830 900Z" fill="#eee0bd" opacity=".55"/>
+</svg>
 <div class="container">
     <h1>阿基米德螺旋抽水器探究實驗室</h1>
 
     <!-- 階段1：介紹影片 -->
     <div class="video-container" id="intro">
         <h2>階段 1：認識螺旋抽水器</h2>
-        <iframe width="560" height="315" src="https://www.youtube.com/embed/dX9GvCF6620" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/A-xPRbj88V4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         <br>
         <form id="student-info-form">
             <div class="student-fields">
@@ -255,7 +464,11 @@
         <h2>階段 2：操作模擬</h2>
 
         <div class="pump-scene" id="pump-scene">
+            <div class="scene-sun" aria-hidden="true"></div>
             <div class="water-basin"></div>
+            <span class="boat-label">積水的小船</span>
+            <div class="reservoir" aria-hidden="true"></div>
+            <span class="reservoir-label">上方水庫</span>
             <div class="pump-tube-wrapper" id="pump-tube-wrapper">
                 <div class="pump-tube" id="pump-tube">
                     <div class="screw-thread"></div>
@@ -326,6 +539,60 @@
     </div>
 </div>
 
+<div class="archimedes-overlay" id="archimedes-overlay" role="dialog" aria-modal="true" aria-labelledby="archimedes-title">
+    <div class="archimedes-card">
+        <h2 id="archimedes-title">阿基米德的小提醒</h2>
+        <svg class="archimedes-sketch" viewBox="0 0 200 200" role="img" aria-label="可愛的阿基米德穿著古希臘長袍與桂冠">
+            <defs>
+                <linearGradient id="archimedes-disc" x1="0" y1="0" x2="1" y2="1">
+                    <stop stop-color="#fff0bf"/>
+                    <stop offset="1" stop-color="#f5ce83"/>
+                </linearGradient>
+                <linearGradient id="archimedes-toga" x1="0" y1="0" x2="1" y2="1">
+                    <stop stop-color="#91b8a4"/>
+                    <stop offset="1" stop-color="#578673"/>
+                </linearGradient>
+            </defs>
+            <circle cx="100" cy="101" r="88" fill="url(#archimedes-disc)"/>
+            <circle cx="100" cy="101" r="79" fill="#fff8e5"/>
+            <g fill="#fff" opacity=".85">
+                <path d="m35 57 3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>
+                <path d="m161 41 2.5 6.5L170 50l-6.5 2.5L161 59l-2.5-6.5L152 50l6.5-2.5z"/>
+                <circle cx="160" cy="138" r="3"/><circle cx="43" cy="139" r="2.5"/>
+            </g>
+            <g stroke="#765034" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M42 183q4-41 36-48h43q33 7 38 48z" fill="url(#archimedes-toga)" stroke-width="3"/>
+                <path d="m78 136 22 19 22-19-8 47H83z" fill="#fff2d5" stroke-width="2.5"/>
+                <path d="m99 155-9 11 10 17 10-17z" fill="#edc96f" stroke-width="2"/>
+                <path d="M71 91q-2-36 29-39 31 3 30 39l-4 24q-5 25-27 28-22-3-27-28z" fill="#f1bd83" stroke-width="3"/>
+                <path d="M68 92q-12-32 8-45 5-20 31-19 28 1 34 27 7 18-3 39l-9-11-1-18q-18 5-41-5-6 17-17 22z" fill="#69503c" stroke-width="3"/>
+                <path d="M72 69q9-20 23-15m8-4q20-5 31 13" fill="none" stroke="#f1d277" stroke-width="5"/>
+                <path d="M76 65q-12-7-13-19 13 4 18 13m4-5q-9-12-5-22 12 9 13 20m6-2q-3-14 5-22 8 13 4 25m5 0q4-14 16-17 1 15-9 24m4 2q11-10 23-8-5 14-19 18" fill="#8da969" stroke="#587345" stroke-width="2.5"/>
+                <path d="M82 94q8-7 16 0m12 0q8-7 16 0" fill="none" stroke-width="3.5"/>
+                <ellipse cx="90" cy="100" rx="3.3" ry="4.5" fill="#493729" stroke="none"/>
+                <ellipse cx="118" cy="100" rx="3.3" ry="4.5" fill="#493729" stroke="none"/>
+                <circle cx="91" cy="98.5" r="1.1" fill="#fff" stroke="none"/>
+                <circle cx="119" cy="98.5" r="1.1" fill="#fff" stroke="none"/>
+                <path d="M103 101q-5 10 1 12" fill="none" stroke-width="2"/>
+                <path d="M94 119q10 9 21 0" fill="none" stroke="#a85046" stroke-width="2.5"/>
+                <path d="M78 115q4 17 20 20l2-10 4 10q17-5 20-20-12 7-23 0-11 7-23 0z" fill="#f2eee3" stroke-width="2"/>
+                <path d="M69 142q-12 7-18 22m78-22q13 7 19 22" fill="none" stroke-width="6"/>
+                <path d="M49 161q-5 4-3 11l15 3q5-3 3-8l-7-7z" fill="#f1bd83" stroke-width="2.5"/>
+                <path d="M152 160q5 4 3 11l-15 4q-5-3-3-8l7-8z" fill="#f1bd83" stroke-width="2.5"/>
+                <path d="M48 172q5 3 12-1m83 2q-5 3-12-1" fill="none" stroke-width="2"/>
+            </g>
+            <g transform="translate(145 107) rotate(17)">
+                <rect x="0" y="0" width="17" height="47" rx="7" fill="#b77c48" stroke="#765034" stroke-width="2.5"/>
+                <path d="M3 8q11-9 11 0t-11 9 11 9-11 9 11 8" fill="none" stroke="#f5d59e" stroke-width="3"/>
+                <path d="M-2 4v-6m21 6v-6m-21 51v6m21-6v6" fill="none" stroke="#765034" stroke-width="3" stroke-linecap="round"/>
+            </g>
+        </svg>
+        <div class="archimedes-speech">操縱變因、控制變因、應變變因要搞清楚喔!</div>
+        <br>
+        <button type="button" id="enter-lab-confirm">我記住了，進入實驗室</button>
+    </div>
+</div>
+
 <!-- 全螢幕警示視窗 -->
 <div class="warning-overlay" id="warning-overlay">
     <div class="warning-box">
@@ -367,7 +634,7 @@ function updatePumpVisual() {
 
     document.getElementById('pump-tube-wrapper').style.transform = `rotate(-${angle}deg)`;
 
-    const thickness = THICKNESS_MAP[diameter];
+    const thickness = Math.max(14, THICKNESS_MAP[diameter] * document.getElementById('pump-scene').clientWidth / 520);
     const tube = document.getElementById('pump-tube');
     tube.style.height = thickness + 'px';
     tube.style.top = (-thickness / 2) + 'px';
@@ -389,6 +656,11 @@ document.getElementById('student-info-form').onsubmit = function(event) {
         return;
     }
     document.getElementById('intro').style.display = 'none';
+    document.getElementById('archimedes-overlay').style.display = 'flex';
+};
+
+document.getElementById('enter-lab-confirm').onclick = function() {
+    document.getElementById('archimedes-overlay').style.display = 'none';
     document.getElementById('experiment').style.display = 'block';
     updatePumpVisual();
 };
@@ -474,10 +746,22 @@ document.getElementById('discuss-results').onclick = function() {
     drawCharts();
 };
 
-/* 「再試一次」：回到實驗室，保留所有既有紀錄 */
+/* 「再試一次」：清除本輪數據，從零開始 */
 document.getElementById('retry-button').onclick = function() {
     document.getElementById('discussion').style.display = 'none';
     document.getElementById('experiment').style.display = 'block';
+    experiments = [];
+    experimentCount = 0;
+    lastParams = null;
+    document.getElementById('data-table').getElementsByTagName('tbody')[0].replaceChildren();
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('discuss-results').disabled = true;
+    document.getElementById('hint').style.display = 'block';
+    document.getElementById('angle').value = '45';
+    document.getElementById('speed').value = 'low';
+    document.getElementById('diameter').value = '6';
+    chartInstances.forEach(chart => chart.destroy());
+    chartInstances = [];
     updatePumpVisual();
 };
 
@@ -555,34 +839,54 @@ function drawCharts() {
     chartInstances.forEach(c => c.destroy());
     chartInstances = [];
 
-    chartInstances.push(new Chart(document.getElementById('chart-angle'), {
-        type: 'line',
-        data: {
-            labels: experiments.map(e => e.angle + '度'),
-            datasets: [{ label: '輸水效率(%)', data: experiments.map(e=>e.efficiency), borderColor: '#e74c3c', fill:false }]
-        },
-        options: { scales: { x: { title: { display:true, text:'夾角(度)' } }, y: { title:{display:true,text:'效率(%)'}, beginAtZero:true } } }
-    }));
+    const speedOrder = { low: 1, medium: 2, high: 3 };
+    const sorted = key => experiments.slice().sort((a, b) => {
+        const aValue = key === 'speed' ? speedOrder[a.speed] : Number(a[key]);
+        const bValue = key === 'speed' ? speedOrder[b.speed] : Number(b[key]);
+        return aValue - bValue;
+    });
+    const scatterOptions = title => ({
+        responsive: true,
+        scales: {
+            x: {
+                type: 'linear',
+                title: { display: true, text: title },
+                ticks: title === '轉速' ? {
+                    stepSize: 1,
+                    callback: value => ({ 1: '低速', 2: '中速', 3: '高速' })[value] || ''
+                } : undefined
+            },
+            y: {
+                title: { display: true, text: '輸水效率(%)' },
+                beginAtZero: true
+            }
+        }
+    });
+    const createScatter = (canvasId, key, xLabel, color, valueMap) => {
+        const points = sorted(key).map(item => ({
+            x: valueMap ? valueMap[item[key]] : Number(item[key]),
+            y: Number(item.efficiency)
+        }));
+        chartInstances.push(new Chart(document.getElementById(canvasId), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: '輸水效率(%)',
+                    data: points,
+                    borderColor: color,
+                    backgroundColor: color,
+                    pointRadius: 6,
+                    showLine: false
+                }]
+            },
+            options: scatterOptions(xLabel)
+        }));
+    };
 
-    chartInstances.push(new Chart(document.getElementById('chart-speed'), {
-        type: 'line',
-        data: {
-            labels: experiments.map(e => e.speed),
-            datasets: [{ label: '輸水效率(%)', data: experiments.map(e=>e.efficiency), borderColor: '#3498db', fill:false }]
-        },
-        options: { scales: { x: { title: { display:true, text:'轉速' } }, y: { title:{display:true,text:'效率(%)'}, beginAtZero:true } } }
-    }));
-
-    chartInstances.push(new Chart(document.getElementById('chart-radius'), {
-        type: 'line',
-        data: {
-            labels: experiments.map(e => e.diameter + '公尺'),
-            datasets: [{ label: '輸水效率(%)', data: experiments.map(e=>e.efficiency), borderColor: '#2ecc71', fill:false }]
-        },
-        options: { scales: { x: { title: { display:true, text:'半徑(公尺)' } }, y: { title:{display:true,text:'效率(%)'}, beginAtZero:true } } }
-    }));
+    createScatter('chart-angle', 'angle', '夾角(度)', '#e74c3c');
+    createScatter('chart-speed', 'speed', '轉速', '#3498db', speedOrder);
+    createScatter('chart-radius', 'diameter', '半徑(公尺)', '#2ecc71');
 }
 </script>
 </body>
 </html>
-
